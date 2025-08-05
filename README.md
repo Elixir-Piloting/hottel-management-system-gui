@@ -35,7 +35,7 @@ To get a local copy up and running, follow these simple steps.
 ### 1. Clone the Repository
 
 ```sh
-git clone https://github.com/Elixir-Piloting/hotel-ms.git
+git clone https://github.com/Elixir-Piloting/hottel-management-system-gui.git
 ```
 
 ### 2. Set up the Database
@@ -61,6 +61,16 @@ java -jar target/hotel-management-system-1.0-SNAPSHOT.jar
 ```
 
 This will launch the application's login screen.
+### Test admin credentials are
+#### username
+```sh
+admin
+```
+#### password
+```sh
+admin123
+```
+
 
 ## 📄 License
 
