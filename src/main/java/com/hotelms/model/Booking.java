@@ -7,22 +7,25 @@ public class Booking {
     private String checkInDate;
     private String checkOutDate;
     private String status;
+    private int stayDays;
 
-    public Booking(int id, int roomId, int guestId, String checkInDate, String checkOutDate, String status) {
+    public Booking(int id, int roomId, int guestId, String checkInDate, String checkOutDate, String status, int stayDays) {
         this.id = id;
         this.roomId = roomId;
         this.guestId = guestId;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
         this.status = status;
+        this.stayDays = stayDays;
     }
 
-    public Booking(int roomId, int guestId, String checkInDate, String checkOutDate, String status) {
+    public Booking(int roomId, int guestId, String checkInDate, String checkOutDate, String status, int stayDays) {
         this.roomId = roomId;
         this.guestId = guestId;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
         this.status = status;
+        this.stayDays = stayDays;
     }
 
     // Getters and Setters
@@ -72,5 +75,13 @@ public class Booking {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public int getStayDays() {
+        return stayDays;
+    }
+
+    public void setStayDays(int stayDays) {
+        this.stayDays = stayDays;
     }
 }

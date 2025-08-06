@@ -74,4 +74,17 @@ public class RoomDAO {
             System.err.println("Error deleting room: " + e.getMessage());
         }
     }
+
+    public void updateRoomStatus(int roomId, String status) {
+        String sql = "UPDATE rooms SET status = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, status);
+            pstmt.setInt(2, roomId);
+            pstmt.executeUpdate();
+            System.out.println("Room status updated for room ID: " + roomId);
+        } catch (SQLException e) {
+            System.err.println("Error updating room status: " + e.getMessage());
+        }
+    }
 }

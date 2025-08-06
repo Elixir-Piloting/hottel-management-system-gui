@@ -10,7 +10,7 @@ import java.util.List;
 public class BookingDAO {
 
     public void addBooking(Booking booking) {
-        String sql = "INSERT INTO bookings(room_id, guest_id, check_in_date, check_out_date, status) VALUES(?,?,?,?,?)";
+        String sql = "INSERT INTO bookings(room_id, guest_id, check_in_date, check_out_date, status, stay_days) VALUES(?,?,?,?,?,?)";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, booking.getRoomId());
@@ -18,6 +18,7 @@ public class BookingDAO {
             pstmt.setString(3, booking.getCheckInDate());
             pstmt.setString(4, booking.getCheckOutDate());
             pstmt.setString(5, booking.getStatus());
+            pstmt.setInt(6, booking.getStayDays());
             pstmt.executeUpdate();
             System.out.println("Booking added for room " + booking.getRoomId() + " and guest " + booking.getGuestId());
         } catch (SQLException e) {
@@ -27,7 +28,7 @@ public class BookingDAO {
 
     public List<Booking> getAllBookings() {
         List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT id, room_id, guest_id, check_in_date, check_out_date, status FROM bookings";
+        String sql = "SELECT id, room_id, guest_id, check_in_date, check_out_date, status, stay_days FROM bookings";
         try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -39,7 +40,8 @@ public class BookingDAO {
                         rs.getInt("guest_id"),
                         rs.getString("check_in_date"),
                         rs.getString("check_out_date"),
-                        rs.getString("status")
+                        rs.getString("status"),
+                        rs.getInt("stay_days")
                 );
                 bookings.add(booking);
             }
@@ -50,7 +52,7 @@ public class BookingDAO {
     }
 
     public void updateBooking(Booking booking) {
-        String sql = "UPDATE bookings SET room_id = ?, guest_id = ?, check_in_date = ?, check_out_date = ?, status = ? WHERE id = ?";
+        String sql = "UPDATE bookings SET room_id = ?, guest_id = ?, check_in_date = ?, check_out_date = ?, status = ?, stay_days = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, booking.getRoomId());
@@ -58,7 +60,8 @@ public class BookingDAO {
             pstmt.setString(3, booking.getCheckInDate());
             pstmt.setString(4, booking.getCheckOutDate());
             pstmt.setString(5, booking.getStatus());
-            pstmt.setInt(6, booking.getId());
+            pstmt.setInt(6, booking.getStayDays());
+            pstmt.setInt(7, booking.getId());
             pstmt.executeUpdate();
             System.out.println("Booking updated for ID: " + booking.getId());
         } catch (SQLException e) {

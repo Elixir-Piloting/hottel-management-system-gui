@@ -56,6 +56,7 @@ public class DatabaseManager {
                                 + "check_in_date TEXT NOT NULL,"
                                 + "check_out_date TEXT NOT NULL,"
                                 + "status TEXT NOT NULL,"
+                                + "stay_days INTEGER NOT NULL,"
                                 + "FOREIGN KEY (room_id) REFERENCES rooms(id),"
                                 + "FOREIGN KEY (guest_id) REFERENCES guests(id)"
                                 + ");";
@@ -66,6 +67,16 @@ public class DatabaseManager {
             stmt.execute(createGuestsTable);
             stmt.execute(createBookingsTable);
             System.out.println("Tables created successfully.");
+        }
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE bookings ADD COLUMN stay_days INTEGER NOT NULL DEFAULT 0");
+            System.out.println("stay_days column added to bookings table.");
+        } catch (SQLException e) {
+            // Ignore if the column already exists
+            if (!e.getMessage().contains("duplicate column name")) {
+                throw e;
+            }
         }
     }
 

@@ -17,9 +17,9 @@ import java.util.List;
 public class BookingManagementScreen extends JPanel implements ActionListener {
     private JTable bookingTable;
     private DefaultTableModel tableModel;
-    private JButton addButton, editButton, deleteButton, backButton;
+    private JButton addButton, editButton, deleteButton, backButton, checkInButton, checkOutButton, generateInvoiceButton;
     
-    private JTextField checkInDateField, checkOutDateField;
+    private JTextField checkInDateField, checkOutDateField, stayDaysField;
     private JComboBox<String> statusComboBox;
     private JComboBox<String> roomComboBox, guestComboBox;
     private BookingDAO bookingDAO;
@@ -37,13 +37,13 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
         guestDAO = new GuestDAO();
 
         // Table setup
-        tableModel = new DefaultTableModel(new String[]{"ID", "Room Number", "Guest Name", "Check-in Date", "Check-out Date", "Status"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"ID", "Room Number", "Guest Name", "Check-in Date", "Check-out Date", "Status", "Stay Days"}, 0);
         bookingTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(bookingTable);
         add(scrollPane, BorderLayout.CENTER);
 
         // Input Panel
-        JPanel inputPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+        JPanel inputPanel = new JPanel(new GridLayout(7, 2, 10, 10));
         inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         inputPanel.add(new JLabel("Room:"));
@@ -64,6 +64,10 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
         checkOutDateField = new JTextField();
         inputPanel.add(checkOutDateField);
 
+        inputPanel.add(new JLabel("Stay Days:"));
+        stayDaysField = new JTextField();
+        inputPanel.add(stayDaysField);
+
         inputPanel.add(new JLabel("Status:"));
         statusComboBox = new JComboBox<>(new String[]{"pending", "confirmed", "cancelled", "checked-in", "checked-out"});
         inputPanel.add(statusComboBox);
@@ -76,12 +80,21 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
         editButton.addActionListener(this);
         deleteButton = new JButton("Delete");
         deleteButton.addActionListener(this);
+        checkInButton = new JButton("Check In");
+        checkInButton.addActionListener(this);
+        checkOutButton = new JButton("Check Out");
+        checkOutButton.addActionListener(this);
+        generateInvoiceButton = new JButton("Generate Invoice");
+        generateInvoiceButton.addActionListener(this);
         backButton = new JButton("Back to Dashboard");
         backButton.addActionListener(this);
 
         buttonPanel.add(addButton);
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
+        buttonPanel.add(checkInButton);
+        buttonPanel.add(checkOutButton);
+        buttonPanel.add(generateInvoiceButton);
         buttonPanel.add(backButton);
 
         JPanel southPanel = new JPanel(new BorderLayout());
@@ -100,6 +113,7 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
                 checkInDateField.setText(tableModel.getValueAt(selectedRow, 3).toString());
                 checkOutDateField.setText(tableModel.getValueAt(selectedRow, 4).toString());
                 statusComboBox.setSelectedItem(tableModel.getValueAt(selectedRow, 5).toString());
+                stayDaysField.setText(tableModel.getValueAt(selectedRow, 6).toString());
             }
         });
     }
@@ -142,7 +156,7 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
                     break;
                 }
             }
-            tableModel.addRow(new Object[]{booking.getId(), roomNumber, guestName, booking.getCheckInDate(), booking.getCheckOutDate(), booking.getStatus()});
+            tableModel.addRow(new Object[]{booking.getId(), roomNumber, guestName, booking.getCheckInDate(), booking.getCheckOutDate(), booking.getStatus(), booking.getStayDays()});
         }
     }
 
@@ -151,6 +165,7 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
         guestComboBox.setSelectedIndex(-1);
         checkInDateField.setText("");
         checkOutDateField.setText("");
+        stayDaysField.setText("");
         statusComboBox.setSelectedIndex(0);
     }
 
@@ -184,9 +199,11 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
             String checkInDate = checkInDateField.getText();
             String checkOutDate = checkOutDateField.getText();
             String status = (String) statusComboBox.getSelectedItem();
+            int stayDays = Integer.parseInt(stayDaysField.getText());
 
             if (roomId != -1 && guestId != -1 && !checkInDate.isEmpty() && !checkOutDate.isEmpty() && status != null) {
-                bookingDAO.addBooking(new Booking(roomId, guestId, checkInDate, checkOutDate, status));
+                bookingDAO.addBooking(new Booking(roomId, guestId, checkInDate, checkOutDate, status, stayDays));
+                roomDAO.updateRoomStatus(roomId, "Reserved");
                 loadBookings();
                 clearFields();
             } else {
@@ -224,9 +241,10 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
                 String checkInDate = checkInDateField.getText();
                 String checkOutDate = checkOutDateField.getText();
                 String status = (String) statusComboBox.getSelectedItem();
+                int stayDays = Integer.parseInt(stayDaysField.getText());
 
                 if (roomId != -1 && guestId != -1 && !checkInDate.isEmpty() && !checkOutDate.isEmpty() && status != null) {
-                    bookingDAO.updateBooking(new Booking(id, roomId, guestId, checkInDate, checkOutDate, status));
+                    bookingDAO.updateBooking(new Booking(id, roomId, guestId, checkInDate, checkOutDate, status, stayDays));
                     loadBookings();
                     clearFields();
                 } else {
@@ -239,14 +257,136 @@ public class BookingManagementScreen extends JPanel implements ActionListener {
             int selectedRow = bookingTable.getSelectedRow();
             if (selectedRow != -1) {
                 int id = (int) tableModel.getValueAt(selectedRow, 0);
+                int roomId = -1;
+                String selectedRoomNumber = (String) tableModel.getValueAt(selectedRow, 1);
+                if (selectedRoomNumber != null) {
+                    List<Room> rooms = roomDAO.getAllRooms();
+                    for (Room room : rooms) {
+                        if (room.getRoomNumber().equals(selectedRoomNumber)) {
+                            roomId = room.getId();
+                            break;
+                        }
+                    }
+                }
+
                 int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this booking?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
                 if (confirm == JOptionPane.YES_OPTION) {
                     bookingDAO.deleteBooking(id);
+                    roomDAO.updateRoomStatus(roomId, "Available");
                     loadBookings();
                     clearFields();
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Please select a booking to delete.", "Selection Error", JOptionPane.WARNING_MESSAGE);
+            }
+        } else if (e.getSource() == checkInButton) {
+            int selectedRow = bookingTable.getSelectedRow();
+            if (selectedRow != -1) {
+                int id = (int) tableModel.getValueAt(selectedRow, 0);
+                int roomId = -1;
+                String selectedRoomNumber = (String) tableModel.getValueAt(selectedRow, 1);
+                if (selectedRoomNumber != null) {
+                    List<Room> rooms = roomDAO.getAllRooms();
+                    for (Room room : rooms) {
+                        if (room.getRoomNumber().equals(selectedRoomNumber)) {
+                            roomId = room.getId();
+                            break;
+                        }
+                    }
+                }
+
+                int guestId = -1;
+                String selectedGuestName = (String) tableModel.getValueAt(selectedRow, 2);
+                if (selectedGuestName != null) {
+                    List<Guest> guests = guestDAO.getAllGuests();
+                    for (Guest guest : guests) {
+                        if ((guest.getFirstName() + " " + guest.getLastName()).equals(selectedGuestName)) {
+                            guestId = guest.getId();
+                            break;
+                        }
+                    }
+                }
+
+                bookingDAO.updateBooking(new Booking(id, roomId, guestId, (String) tableModel.getValueAt(selectedRow, 3), (String) tableModel.getValueAt(selectedRow, 4), "checked-in", (int) tableModel.getValueAt(selectedRow, 6)));
+                roomDAO.updateRoomStatus(roomId, "Occupied");
+                loadBookings();
+                clearFields();
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a booking to check in.", "Selection Error", JOptionPane.WARNING_MESSAGE);
+            }
+        } else if (e.getSource() == checkOutButton) {
+            int selectedRow = bookingTable.getSelectedRow();
+            if (selectedRow != -1) {
+                int id = (int) tableModel.getValueAt(selectedRow, 0);
+                int roomId = -1;
+                String selectedRoomNumber = (String) tableModel.getValueAt(selectedRow, 1);
+                if (selectedRoomNumber != null) {
+                    List<Room> rooms = roomDAO.getAllRooms();
+                    for (Room room : rooms) {
+                        if (room.getRoomNumber().equals(selectedRoomNumber)) {
+                            roomId = room.getId();
+                            break;
+                        }
+                    }
+                }
+
+                int guestId = -1;
+                String selectedGuestName = (String) tableModel.getValueAt(selectedRow, 2);
+                if (selectedGuestName != null) {
+                    List<Guest> guests = guestDAO.getAllGuests();
+                    for (Guest guest : guests) {
+                        if ((guest.getFirstName() + " " + guest.getLastName()).equals(selectedGuestName)) {
+                            guestId = guest.getId();
+                            break;
+                        }
+                    }
+                }
+
+                bookingDAO.updateBooking(new Booking(id, roomId, guestId, (String) tableModel.getValueAt(selectedRow, 3), (String) tableModel.getValueAt(selectedRow, 4), "checked-out", (int) tableModel.getValueAt(selectedRow, 6)));
+                roomDAO.updateRoomStatus(roomId, "Available");
+                loadBookings();
+                clearFields();
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a booking to check out.", "Selection Error", JOptionPane.WARNING_MESSAGE);
+            }
+        } else if (e.getSource() == generateInvoiceButton) {
+            int selectedRow = bookingTable.getSelectedRow();
+            if (selectedRow != -1) {
+                int roomId = -1;
+                String selectedRoomNumber = (String) tableModel.getValueAt(selectedRow, 1);
+                double roomPrice = 0;
+                if (selectedRoomNumber != null) {
+                    List<Room> rooms = roomDAO.getAllRooms();
+                    for (Room room : rooms) {
+                        if (room.getRoomNumber().equals(selectedRoomNumber)) {
+                            roomId = room.getId();
+                            roomPrice = room.getPrice();
+                            break;
+                        }
+                    }
+                }
+
+                int stayDays = (int) tableModel.getValueAt(selectedRow, 6);
+                double totalPrice = roomPrice * stayDays;
+
+                String guestName = (String) tableModel.getValueAt(selectedRow, 2);
+                String checkInDate = (String) tableModel.getValueAt(selectedRow, 3);
+                String checkOutDate = (String) tableModel.getValueAt(selectedRow, 4);
+
+                JTextArea invoiceTextArea = new JTextArea();
+                invoiceTextArea.setEditable(false);
+                invoiceTextArea.setText("Invoice\n\n" +
+                        "Guest: " + guestName + "\n" +
+                        "Room: " + selectedRoomNumber + "\n" +
+                        "Check-in: " + checkInDate + "\n" +
+                        "Check-out: " + checkOutDate + "\n" +
+                        "Stay Days: " + stayDays + "\n" +
+                        "Room Price: " + roomPrice + "\n" +
+                        "Total Price: " + totalPrice);
+
+                JOptionPane.showMessageDialog(this, new JScrollPane(invoiceTextArea), "Invoice", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a booking to generate an invoice.", "Selection Error", JOptionPane.WARNING_MESSAGE);
             }
         } else if (e.getSource() == backButton) {
             mainDashboard.showCard("MainDashboard");
